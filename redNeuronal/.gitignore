@@ -1,4 +1,6 @@
 
 # No trackear los archivos en las siguientes carpetas:
+
 .ipynb_checkpoints/red_bow_prueba-checkpoint.ipynb
 
+.directory
