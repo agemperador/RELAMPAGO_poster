@@ -39,7 +39,7 @@ def hermes(DATAFRAME, name_MSJ, name_USER, number_spam):
     spam = []
     for i in cant_users:
         h = list(DATAFRAME[name_USER]).count(i)
-        if h >= 5: spam.append(i)
+        if h >= number_spam: spam.append(i)
     
     aux = []       
     for i in spam:
