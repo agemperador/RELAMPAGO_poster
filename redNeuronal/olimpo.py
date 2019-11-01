@@ -502,6 +502,7 @@ class BoWClassifier(nn.Module): # inheriting from nn.Module!
         """
         vec = torch.zeros(len(word_to_ix))
         for word in sentence:
+            
             vec[word_to_ix[word]] += 1
         return vec.view(1, -1)
 
