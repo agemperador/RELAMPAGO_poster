@@ -21,6 +21,78 @@ import matplotlib.pyplot as plt
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ##################################################################
 #----------------------------------------------------------------#
+#-----------------------------ZEUS-------------------------------#
+#----------------------------------------------------------------#
+##################################################################
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"""""""""""""""CARGA DEL DATASET DE TRAIN Y TEST"""""""""""""""
+def zeus(archivo = 'base_corr_orto - Copy of base_corr.csv', Data_path = './tweets.csv',
+        name_MSJ = 'Twit',name_TAG = 'Tag', name_NUM = 'Num',name_USER = 'user_id',name_csv = 'TW_filtrados'):
+    """
+    Función principal que conecta todas las funciones de procesamiento de los datos y generación del Dataframe final.
+    Carga el archivo csv, le agrega una columna de Usuario para luego filtrarlos con la función hermes.
+    Luego pasa el dataset por la función dionisio donde se normaliza puliendo cosas innesesarias.
+    
+    This function provides de conection of all the first part of the data analysis.
+    It begins loading both, the csv of tagged twits and the csv of all the twits.
+    Then it use those to merge in one dataframe with a new column named USER and the 'hermes' function is called.
+    The hermes function will make a filter by the 'spam' users removing those who have more than a number_spam of twits.
+    After that, it creates a new column on de dataframe and saves de normalization of the Message column on the MSJ_NORM column with the 'dioni' function.
+    At the end the dataframe will be saved on a new csv with the name of 'name_csv'.
+    ------------------------------------
+    Datos de entrada:
+    ------------------------------------
+    archivo = path + nombre del csv
+    Data_path
+    name_MSJ = Nombre de la columna de Twit
+    name_TAG = Nombre de la columna de Tags
+    name_NUM = Nombre de la columna de número de twit
+    name_csv = Name of the new csv that will be created
+    ------------------------------------
+    Datos de salida:
+    ------------------------------------
+    TW = Is the Dataframe zeuzed 
+    
+    """
+    DATA = pd.read_csv(Data_path,sep=';')
+    print('Archivo crudo cargado de %s'%Data_path)
+    
+    ########################################################
+    """""""""""""""SE CARGA EL CSV CORREGIDO"""""""""""""""
+    ########################################################
+    TW = pd.read_csv(archivo)
+    print('Datos corregidos cargados de "%s"' %archivo)
+
+    MSJ = TW[name_MSJ]
+    TAG = TW[name_TAG]
+    NUM = TW[name_NUM]
+    WHO = TW['Nombre']
+    USER = DATA[name_USER][np.asarray(NUM)]
+
+    FINAL = pd.DataFrame(list(zip(MSJ, TAG, NUM, USER, WHO)), columns = ['MSJ', 'TAG', 'NUM', 'USER', 'WHO'])
+    
+    TW = hermes(FINAL,name_USER='USER')
+
+    
+    ########################################################
+    """""""""""""""""NORMALIZAMOS LOS TWITS"""""""""""""""""
+    ########################################################
+    
+    print(len(TW['MSJ']), len(FINAL['MSJ']))
+    
+    TW['MSJ_NORM'] = dioni(TW['MSJ'])
+    
+    
+    TW.to_csv(r'%s.csv'%name_csv, index = None, sep = ';')
+
+    ##### ACÁ VA LA CORRECCIÓN ORTOGRAFICA ###
+    
+    return TW
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+##################################################################
+#----------------------------------------------------------------#
 #-----------------------------DIONI------------------------------#
 #----------------------------------------------------------------#
 ##################################################################
@@ -60,9 +132,9 @@ def dioni(mensaje, emoticones = False):
     #############################################################################################################
     """""""""""""""""""""""""""""""""""""""""""""""PALABRAS A IGNORAR"""""""""""""""""""""""""""""""""""""""""""""""
     #############################################################################################################
-    ign_palabras = ['mbar','cdu','s','la','lo','st','que', 'me','t','p','el','weathercloud','en','h',
-                    'temp','hpa','km','mm',"su","vos",'que',"re","d","xq","le","te","tu","soy","sos","mi","da","o",
-                    "x","les","me","d","q", "lo", "los", "mi", "son", "a", "el", 
+    ign_palabras = ['mbar','cdu','s','la','lo','st','que', 'me','t','p','el','weathercloud','en','h',       
+                    'temp','hpa','km','mm',"su","vos",'que',"re","d","xq", "le","te","tu" ,"soy"                                                                                                                                                                            
+                    ,"sos","mi","da","o","x","les","me","d", "q", "lo", "los", "mi", "son", "a", "el", 
                     "un","la", "una","en","por","para", 'las',"ante", "al", 'me',"rt", "del", "y", "de",
                     "que", "sus", "ha", "es", "con", "nos", "eh", "xd"]
 
@@ -70,7 +142,7 @@ def dioni(mensaje, emoticones = False):
         
         ## Convierto mayúsculas en minúsculas
         mensaje[i] = mensaje[i].lower()
-        
+
         ## Saco las menciones y otras cosas
         txt = mensaje[i].split()
         
@@ -101,10 +173,13 @@ def dioni(mensaje, emoticones = False):
         ## Para separar emojis
         mensaje[i] = mensaje[i].replace('\\', ' \\')
         
+                
+        if mensaje[i][0] != ' ': 
+            mensaje[i] = ' ' + mensaje[i]
+        
         ## ignoramos
-        for j in range(len(ign_palabras)):
-            mensaje[i] = mensaje[i].replace(" "+ign_palabras[j]+" ", ' ')
-
+        for j in ign_palabras:
+            mensaje[i] = mensaje[i].replace(" "+j+" ", ' ')
         
     return mensaje
 
@@ -154,7 +229,7 @@ def afrodita(text, max_words = 200):
 """""""""""""""""""""ENTRENAMIENTO DE LA RED"""""""""""""""""""""
 #################################################################
 def atenas(train,word_to_ix, label_to_ix,capas = [], 
-           lr = 0.1, epocas = 20, err = 0.01, opt = 'sgd' ):
+           lr = 0.1, epocas = 20, err = 0.01, opt = 'sgd', nombre_modelo = 'BOWCLASS' ):
     """
     Función de entrenamiento de la red neuronal.
     Primero instancia un modelo BowClassifier con los sizes
@@ -195,8 +270,10 @@ def atenas(train,word_to_ix, label_to_ix,capas = [],
     capas.insert(0,VOCAB_SIZE)
 
     sizes = capas
-    
-    model = BoWClassifier(sizes)
+    if nombre_modelo == 'BOWCLASS':
+        model = BoWClassifier(sizes)
+    elif nombre_modelo == 'EMBEDDING':
+        model = RNNClassifier(VOCAB_SIZE,200)
     loss_function = nn.CrossEntropyLoss()
     
     if opt == 'adam': optimizer = optim.Adam(model.parameters(), lr)
@@ -216,11 +293,12 @@ def atenas(train,word_to_ix, label_to_ix,capas = [],
             model.zero_grad()
 
             # Hacemos el vector de bag of words
-            bow_vec = BoWClassifier.make_bow_vector(instance, word_to_ix)
+            
+            bow_vec = RNNClassifier.make_bow_vector(instance, word_to_ix)
 
             # Guardamos el label del diccionario de Tags
             
-            target = BoWClassifier.make_target(label, label_to_ix)
+            target = RNNClassifier.make_target(label, label_to_ix)
 
             # Hacemos el forward pass.
             log_probs = model(bow_vec)
@@ -246,7 +324,7 @@ def atenas(train,word_to_ix, label_to_ix,capas = [],
     plt.figure()
     plt.plot(error)
     plt.show()
-
+    
     
     return model
 
@@ -328,39 +406,42 @@ def cronos(test,word_to_ix, model):
     ax = plt.subplot(1,2,1)
 
     bar = plt.bar(range(4),[Meteo, NoMeteo,Falsos,Sorpresas],
-                  tick_label=['Aciertos \n Meteorológico','Aciertos No \n Meteorológico',
-                              'Falsos positivos','Sorpresas'], color = 'skyblue')
-    plt.title('Resultados')
-    plt.ylabel('Cantidad de aciertos.  Total='+str(total))
+                  tick_label=['Meteorological \n success','Not Meteorological \n success',
+                              'Fake successes','Surprises'], color = 'orange')
+    plt.title('Results')
+    plt.ylabel('Successes.  Total='+str(total))
     for rect, porcentaje in zip(bar,[Meteo,NoMeteo,Falsos,Sorpresas]):
-        height = rect.get_height()- 5
+        height = rect.get_height()- 25
         plt.text(rect.get_x() + rect.get_width()/2.0, height, '%d' % round((porcentaje/total)*100, 3) + ' %'
-                 ,fontsize = 13, color = 'black',ha='center', va='bottom')
+                 ,fontsize = 14, color = 'black',ha='center', va='bottom')
         
     #################################################
     """""""""""""""COMPARACIÓN DE TAGS"""""""""""""""
     #################################################
     ax2 = plt.subplot(1,2,2)
 
+    color=plt.cm.viridis(range(0,300,round(300/4)))
+
     bar1 = plt.bar(np.arange(2), [Meteo + Sorpresas,NoMeteo + Falsos], bar_width, 
-                   tick_label = ['Meteorológicos', 'No Meteorológicos'],
-                   color = 'skyblue', label = 'Total de twits'
+                   tick_label = ['Meteorological', 'Not Meteorological'],
+                   color = color, label = 'Total of Twits'
                   )
 
     for rect, porcentaje in zip(bar1,[Meteo + Sorpresas,NoMeteo + Falsos]):
-        height = rect.get_height()-20
-        plt.text(rect.get_x() + rect.get_width()/2.0, height, '%d' % porcentaje
-                 ,fontsize = 13, color = 'black',ha='center', va='bottom')
+        height = rect.get_height()-25
+        plt.text(rect.get_x() + rect.get_width()/2, height, '%d' % porcentaje
+                 ,fontsize = 14, color = 'white',ha='center', va='bottom')
 
-
+    color=plt.cm.viridis(range(0,300,round(300/4)))
+    
     bar2 = plt.bar(np.arange(2) +bar_width*1.1, [Sorpresas,Falsos], bar_width,
-                  tick_label = ['Meteorológicos', 'No Meteorológicos'],
-                   color = 'salmon' , label= 'Total de Fallas'
+                  tick_label = ['Meteorological', 'Not Meteorological'],
+                   color = color , label= 'Total Fails'
                   )
     for rect, porcentaje in zip(bar2,[Sorpresas/(Meteo + Sorpresas),Falsos/(NoMeteo + Falsos)]):
-        height = rect.get_height()-20
-        plt.text(rect.get_x() + rect.get_width()/2.0, height, '%d %%' % round(porcentaje*100,3)
-                 ,fontsize = 13, color = 'black',ha='center', va='bottom')
+        height = rect.get_height()-25
+        plt.text(rect.get_x()+rect.get_width()/2 , height, '%d %%' % round(porcentaje*100,3)
+                 ,fontsize = 14, color = 'white',ha='center', va='bottom')
 
     plt.legend()
     plt.title('Comparativa')
@@ -568,8 +649,78 @@ class BoWClassifier(nn.Module): # inheriting from nn.Module!
         
         return torch.LongTensor([label_to_ix[label]])
     
-
-
     
+    
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+##################################################################
+#----------------------------------------------------------------#
+#---------------------------RED RNN CLASS------------------------#
+#----------------------------------------------------------------#
+##################################################################
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+class RNNClassifier(nn.Module): # inheriting from nn.Module!
+    """
+    Clase que abarca a la red y las funciones necesarias
+    """
+    
+    def __init__(self, vocab, embedding,hsize=10, sizes=[0]):
+        """
+        Función que genera la estructura de la red con las capas pedidas en sizes
+        
+        """
+        super(RNNClassifier, self).__init__()
 
+        self.isize = vocab
+        self.esize = embedding
+        
+        self.embedding =  torch.nn.Embedding(self.isize, self.esize)     
+ 
+        self.linear1 = torch.nn.Linear(self.esize, hsize)
+
+        self.linear2 = torch.nn.Linear(hsize, 2)
+
+        self.emb = torch.nn.Embedding(self.isize,self.esize)
+        self.layers = torch.nn.ModuleList()
+
+        for i in range(len(sizes)-1):
+            self.layers.append(torch.nn.Linear(sizes[i],sizes[i+1]))
+        
+        
+    def forward(self, bow_vec):
+        """
+        Función que pasa los bow_vectors por la red
+        Devuelve la salida de la red
+        """
+        
+        h = bow_vec
+        h = self.embedding(h)
+        
+        out = torch.tanh(self.linear1(h))
+        
+        # Itero todas las capas menos la ultima
+        #for hidden in self.layers[:-1]:
+        #    h = torch.tanh (hidden (h))
+        #La ultima es output
+        #output = self.layers[-1]
+        output = torch.tanh(self.linear2(h))
+        #y = output(h)
+        #La uso con softmax
+        
+        #soft = F.log_softmax(y , dim=1)
+        
+        return output
+    
+    def make_bow_vector(sentence, word_to_ix):
+        """
+        Función que devuelve en base a una frase, el bag of words correspondiente segun el diccionario.
+        """
+        vec = torch.zeros(len(word_to_ix))
+        for word in sentence:
+            
+            vec[word_to_ix[word]] += 1
+        return vec.view(1, -1)
+
+    def make_target(label, label_to_ix):
+        
+        return torch.LongTensor([label_to_ix[label]])  
     
