@@ -193,7 +193,7 @@ def dioni(mensaje, emoticones = False):
 
 """""""""""""""IMAGEN CHETA"""""""""""""""
 #EX makeIMAGE
-def afrodita(text, max_words = 200):
+def afrodita(text, max_words = 200,width=1920, height=1080):
     """
     Esta función es la que genera la imagen de frecuencias:
     Se ingresan toda la base de twits en forma de frecuencias, generadas por la función zeus.
@@ -204,16 +204,17 @@ def afrodita(text, max_words = 200):
     # Para que tenga forma de alicia
     #alice_mask = np.array(Image.open("cord.jpeg"))
 
-    wc = WordCloud(background_color="white", max_words=max_words, width=1920, height=1080) #, mask=alice_mask)
+    wc = WordCloud(background_color="white", max_words=max_words,contour_color ='white', width=width, height=height) #, mask=alice_mask)
     # Esto genera la nube de palabras
     wc.generate_from_frequencies(text)
 
     # show
-    fig = plt.figure(figsize=(20,20))
+    fig = plt.figure(figsize=(30,10))
     plt.imshow(wc, interpolation="bilinear",cmap=plt.get_cmap("coolwarm"))
     #plt.axis("off")
     plt.tick_params(bottom=False,top=False,left=False,right=False,labelbottom=False,labelleft = False)
     plt.savefig('Multiword')
+    plt.box(on=None)
     plt.show()
 
     
@@ -288,17 +289,19 @@ def atenas(train,word_to_ix, label_to_ix,capas = [],
         #if epoch % 10 == 0: print('Epoch: %i' %epoch)
         for instance, label in train:
 
+            if instance == ['nan'] or str(label) == 'nan': continue
+            
             #if instance == 'nan': continue
             # Hay que resetear los gradientes antes de hacer cuentas
             model.zero_grad()
 
             # Hacemos el vector de bag of words
             
-            bow_vec = RNNClassifier.make_bow_vector(instance, word_to_ix)
+            bow_vec = BoWClassifier.make_bow_vector(instance, word_to_ix)
 
             # Guardamos el label del diccionario de Tags
             
-            target = RNNClassifier.make_target(label, label_to_ix)
+            target = BoWClassifier.make_target(label, label_to_ix)
 
             # Hacemos el forward pass.
             log_probs = model(bow_vec)
@@ -327,6 +330,8 @@ def atenas(train,word_to_ix, label_to_ix,capas = [],
     
     
     return model
+
+
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ##################################################################
@@ -363,6 +368,7 @@ def cronos(test,word_to_ix, model):
     Meteo ,NoMeteo, Sorpresas, Falsos, total = 0,0,0,0,0
     model.eval()
     for instance, label in test:
+        if instance == ['nan']: continue
         bow_vec = autograd.Variable(BoWClassifier.make_bow_vector(instance, word_to_ix))
         log_probs = model(bow_vec)
         log_probs_exp = log_probs.exp()
@@ -394,12 +400,40 @@ def cronos(test,word_to_ix, model):
           '% \n Aciertos a tweets no meteorologicos:', round((NoMeteo/total)*100, 3),
           '% \n Sorpresas: ', round((Sorpresas/total)*100, 3),
           '% \n Falsos positivos: ', round((Falsos/total)*100, 3), '%') 
+
+    fig, ax = plt.subplots(14,11)
+    #plt.rcParams['font.sans-serif'] = 'Arial'
+    #plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['text.color'] = 'black'
+    #plt.rcParams['axes.labelcolor']= '#909090'
+    plt.rcParams['xtick.color'] = '#909090'
+    plt.rcParams['ytick.color'] = '#909090'
+    plt.rcParams['font.size']=14
+    labels = ['Success', 
+             'Surprises',
+             'False positives']
     
+    percentages = [Meteo + NoMeteo,Sorpresas,Falsos]
+    
+    color_palette_list = ['#55C667FF', '#33638DFF','#440154FF' , '#0EBFE9',   
+                          '#C1F0F6', '#0099CC']
+    explode=(0.1,0.1,0.1)
+    ax.pie(percentages, explode=explode,   
+           colors=color_palette_list[0:3], autopct='%1.0f%%', 
+           shadow=False, startangle=0,   
+           pctdistance=1.2,labeldistance=1.4)
+    ax.axis('equal')
+    #ax.set_title("Elephant in the Valley Survey Respondent Make-up")
+    ax.legend(labels[0:3],frameon=False, bbox_to_anchor=(1.5,0.8))
+    
+    plt.show()
+    return Meteo,NoMeteo,Sorpresas,Falsos,total
+
     #####################################################
     """""""""""""""GRÁFICO DE VERIFICACIÓN"""""""""""""""
     #####################################################
-    
-    fig = plt.figure(figsize=(13,5))
+"""    
+    fig = plt.figure(figsize=(14,11))
     opacity = 0.4
     bar_width = 0.35
 
@@ -407,8 +441,9 @@ def cronos(test,word_to_ix, model):
 
     bar = plt.bar(range(4),[Meteo, NoMeteo,Falsos,Sorpresas],
                   tick_label=['Meteorological \n success','Not Meteorological \n success',
-                              'Fake successes','Surprises'], color = 'orange')
-    plt.title('Results')
+                              'False \n Positive','Surprises'], color = 'orange')
+    
+    plt.title('Results', fontsize = 24)
     plt.ylabel('Successes.  Total='+str(total))
     for rect, porcentaje in zip(bar,[Meteo,NoMeteo,Falsos,Sorpresas]):
         height = rect.get_height()- 25
@@ -416,15 +451,15 @@ def cronos(test,word_to_ix, model):
                  ,fontsize = 14, color = 'black',ha='center', va='bottom')
         
     #################################################
-    """""""""""""""COMPARACIÓN DE TAGS"""""""""""""""
+    COMPARACIÓN DE TAGS
     #################################################
     ax2 = plt.subplot(1,2,2)
 
-    color=plt.cm.viridis(range(0,300,round(300/4)))
+    #color=plt.cm.viridis_r(range(0,300,round(300/4)))
 
     bar1 = plt.bar(np.arange(2), [Meteo + Sorpresas,NoMeteo + Falsos], bar_width, 
                    tick_label = ['Meteorological', 'Not Meteorological'],
-                   color = color, label = 'Total of Twits'
+                   color = '#55C667FF', label = 'Total of Twits'
                   )
 
     for rect, porcentaje in zip(bar1,[Meteo + Sorpresas,NoMeteo + Falsos]):
@@ -436,7 +471,7 @@ def cronos(test,word_to_ix, model):
     
     bar2 = plt.bar(np.arange(2) +bar_width*1.1, [Sorpresas,Falsos], bar_width,
                   tick_label = ['Meteorological', 'Not Meteorological'],
-                   color = color , label= 'Total Fails'
+                   color = '#440154FF' , label= 'Total Fails'
                   )
     for rect, porcentaje in zip(bar2,[Sorpresas/(Meteo + Sorpresas),Falsos/(NoMeteo + Falsos)]):
         height = rect.get_height()-25
@@ -444,11 +479,10 @@ def cronos(test,word_to_ix, model):
                  ,fontsize = 14, color = 'white',ha='center', va='bottom')
 
     plt.legend()
-    plt.title('Comparativa')
+    plt.title('Comparison', fontsize = 24)
     plt.savefig('Comparativa.png')
     plt.show()
-    
-    return Meteo,NoMeteo,Sorpresas,Falsos,total
+"""    
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ##################################################################
@@ -469,9 +503,8 @@ def alexandria(mensaje):
         """""""""DICCIONARIO"""""""""
            #Diccionario y frecuencias
         #print(mensaje[i])
-        #if str(mensaje[i]) == 'nan':
-            #print('Es nan')
-        #    continue
+        if str(mensaje[i]) == 'nan':
+            continue
         for word in mensaje[i].split():
             
             # El diccionario tiene que tener todas las palabras posibles
@@ -724,3 +757,50 @@ class RNNClassifier(nn.Module): # inheriting from nn.Module!
         
         return torch.LongTensor([label_to_ix[label]])  
     
+class EmbeddingTrain(nn.Module):
+    
+    def __init__(_, vocab, esize =200):
+        
+        super().__init__()
+        
+        _.isize = vocab
+        _.embsize = esize
+        
+        _.emb = nn.Embedding(_.isize,_.embsize)
+    
+        
+    def forward(_, x):
+        """
+        Función que pasa los bow_vectors por la red
+        Devuelve la salida de la red
+        """
+        
+        output = _.emb(x)
+        
+                
+        return output
+    
+    def one_hot(word,word_to_ix):
+        
+        vec = torch.zeros(len(word_to_ix))
+        vec[word_to_ix[word]] +=1
+        
+        return vec.view(1,-1)
+    
+    def make_bow_vector(sentence, word_to_ix):
+        """
+        Función que devuelve en base a una frase, el bag of words correspondiente segun el diccionario.
+        """
+        vec = torch.zeros(len(word_to_ix))
+        for word in sentence:
+            
+            vec[word_to_ix[word]] += 1
+        return vec.view(1, -1)
+
+    def make_target(label, label_to_ix):
+        
+        return torch.LongTensor([label_to_ix[label]])  
+        
+        
+        
+        
