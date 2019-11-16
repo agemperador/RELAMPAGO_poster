@@ -401,14 +401,14 @@ def cronos(test,word_to_ix, model):
           '% \n Sorpresas: ', round((Sorpresas/total)*100, 3),
           '% \n Falsos positivos: ', round((Falsos/total)*100, 3), '%') 
 
-    fig, ax = plt.subplots(14,11)
+    fig, ax = plt.subplots(figsize=(12,9))
     #plt.rcParams['font.sans-serif'] = 'Arial'
     #plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['text.color'] = 'black'
     #plt.rcParams['axes.labelcolor']= '#909090'
     plt.rcParams['xtick.color'] = '#909090'
     plt.rcParams['ytick.color'] = '#909090'
-    plt.rcParams['font.size']=14
+    plt.rcParams['font.size']=23
     labels = ['Success', 
              'Surprises',
              'False positives']
@@ -417,7 +417,7 @@ def cronos(test,word_to_ix, model):
     
     color_palette_list = ['#55C667FF', '#33638DFF','#440154FF' , '#0EBFE9',   
                           '#C1F0F6', '#0099CC']
-    explode=(0.1,0.1,0.1)
+    explode=(0.1,0.,0.)
     ax.pie(percentages, explode=explode,   
            colors=color_palette_list[0:3], autopct='%1.0f%%', 
            shadow=False, startangle=0,   
