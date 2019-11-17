@@ -101,7 +101,7 @@ def zeus(archivo = 'base_corr_orto - Copy of base_corr.csv', Data_path = './twee
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 # EX normalizacion
-def dioni(mensaje, emoticones = False):
+def dioni(mensaje, emoticones = False, ignorar = True):
     """
     Esta función toma un dataset de twits y los normaliza.
     Devuelve: mensajes normalizados, el diccionario de palabras y la frecuencia de palabras (En ese orden).
@@ -179,9 +179,10 @@ def dioni(mensaje, emoticones = False):
         if mensaje[i][0] != ' ': 
             mensaje[i] = ' ' + mensaje[i]
         
-        ## ignoramos
-        for j in ign_palabras:
-            mensaje[i] = mensaje[i].replace(" "+j+" ", ' ')
+        if ignorar == True:
+            ## ignoramos
+            for j in ign_palabras:
+                mensaje[i] = mensaje[i].replace(" "+j+" ", ' ')
         
     return mensaje
 
